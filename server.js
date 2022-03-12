@@ -12,7 +12,15 @@ const questions = () => {
             type: 'list',
             name: 'choice',
             message: "What would you like to do?",
-            choices: ["view all departments", "view all roles", "view all employees","add a department", "add a roles", "add an employee", "update an employee role"]
+            choices: [
+                "view all departments", 
+                "view all roles", 
+                "view all employees",
+                "add a department", 
+                "add a roles", 
+                "add an employee", 
+                "update an employee role"
+            ]
         }
     ])
 }
@@ -20,7 +28,7 @@ const questions = () => {
 function viewDepts() {
     const sqlString = `SELECT dept_id, name FROM department`
 
-    db.query(sqlString, (err, result) => {
+    db.promise().query(sqlString, (err, result) => {
         if(err) throw err;
         //creates new line
         console.log('\n')
@@ -36,7 +44,7 @@ function viewRoles() {
     LEFT JOIN department 
     ON department_id = department.dept_id`
 
-    db.query(sqlString, (err, result) => {
+    db.promise().query(sqlString, (err, result) => {
         if(err) throw err;
         console.log('\n')
         console.table(result)
@@ -48,7 +56,7 @@ function viewRoles() {
 
 function viewEmplys() {
     const sqlString = `
-    SELECT e1.first_name, e1.last_name, title, name AS department, salary, concat (e2.first_name, " ", e2.last_name) AS manager
+    SELECT e1.first_name, e1.last_name, title, name AS department, salary, CONCAT(e2.first_name, " ", e2.last_name) AS manager
     FROM employee e1
     LEFT JOIN role
     ON role_id = role.id
@@ -58,13 +66,30 @@ function viewEmplys() {
     ON e1.manager_id = e2.employee_id
     `
 
-    db.query(sqlString, (err, result) => {
+    db.promise().query(sqlString, (err, result) => {
     if(err) throw err;
     console.log('\n')
     console.table(result)
     console.log('\n')
 
     init();
+    })
+}
+
+function addDept()  {
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'name',
+            message: 'Please enter the name of the department'
+        }
+    ]).then (newDept => {
+        let sqlString = `INSERT INTO department (name) VALUES (?)`
+        db.query(sqlString, newDept.name, (err, result) => {   
+            if(err) throw err;
+            console.log(`Added`, newDept.name,`to the database`)
+            init();
+        })
     })
 }
 
@@ -79,6 +104,8 @@ function init() {
         } else if(answer.choice == "view all employees") {
             // console.log(answer)
             viewEmplys();
-        } else {console.log(answer)}
+        } else if(answer.choice == "add a department") {
+            addDept();
+        } else (console.log(answer))
     })
 }
