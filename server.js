@@ -24,7 +24,8 @@ const questions = () => {
                 "view employees by manager",
                 "view employees by department",
                 "delete a department",
-                "delete a role"
+                "delete a role",
+                "delete an employee"
             ]
         }
     ])
@@ -328,7 +329,34 @@ async function addEmployee() {
 }
 
 function searchEmployee() {
-    return db.promise().query(`SELECT e.employee_id AS id, e.role_id, title, CONCAT(e.first_name, " ", e.last_name) AS name FROM employee e LEFT JOIN role ON role_id = role.id`);
+    return db.promise().query(`SELECT employee_id AS id, role_id, title, CONCAT(first_name, " ", last_name) AS name FROM employee LEFT JOIN role ON role_id = role.id`);
+}
+
+async function deleteEmployee() {
+    const [rows] = await searchEmployee()
+
+    const chooseEmploy = rows.map((findEmploy) => ({
+        name: findEmploy.name,
+        value: findEmploy.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employeeList',
+            message: 'Which employee do you want to delete?',
+            choices: chooseEmploy
+        }
+    ]).then(deletedEmployee => {
+        let sqlString = `DELETE FROM employee WHERE employee_id = ?`
+        const employeeID = deletedEmployee.employeeList
+
+        db.query(sqlString, employeeID, (err, result) => {
+            if(err) throw err;
+            console.log("Employee Deleted!")
+            init();
+        })
+    })
 }
 
 async function updateRole() {
@@ -435,6 +463,8 @@ function init() {
             deleteDept();
         } else if(answer.choice == "delete a role") {
             deleteRole();
+        } else if (answer.choice == "delete an employee") {
+            deleteEmployee();
         } else (console.log(answer))
     })
 }
