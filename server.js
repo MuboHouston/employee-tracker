@@ -21,7 +21,8 @@ const questions = () => {
                 "add an employee", 
                 "update an employee role",
                 "update an employee's manager",
-                "view employee by manager"
+                "view employees by manager",
+                "view employees by department"
             ]
         }
     ])
@@ -102,6 +103,43 @@ async function viewEmployeesByManager() {
         WHERE e1.manager_id = ?
         `
         const answers = [viewEmployees.managerList]
+        db.query(sqlString, answers, (err, result) => {
+            if(err) throw err;
+            console.log('\n')
+            console.table(result);
+            console.log('\n')
+            init();
+        })
+    })
+}
+
+async function viewEmployeesByDept() {
+    const [deptRows] = await searchDept()
+    // console.log(rows);
+
+    const chooseDept = deptRows.map((findDept) =>({
+        name: findDept.name,
+        value: findDept.dept_id
+    }))
+    console.log("choose Dept:",chooseDept);
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'deptList',
+            message:'Please select a department',
+            choices: chooseDept
+        }
+    ]).then(viewEmployees=> {
+        const sqlString = `SELECT CONCAT(first_name, " ", last_name) AS employee_names, title, name AS department
+        FROM employee
+        LEFT JOIN role
+        ON role_id = role.id
+        LEFT JOIN department
+        ON department_id = department.dept_id
+        WHERE department_id = ?
+        `
+        const answers = [viewEmployees.deptList]
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
             console.log('\n')
@@ -322,7 +360,7 @@ function init() {
     .then(answer => {
         if(answer.choice == "view all departments"){
             viewDepts();
-        } else if (answer.choice == "view all roles") {
+        } else if(answer.choice == "view all roles") {
             // console.log(answer)
             viewRoles();
         } else if(answer.choice == "view all employees") {
@@ -330,16 +368,18 @@ function init() {
             viewEmployees();
         } else if(answer.choice == "add a department") {
             addDept();
-        } else if (answer.choice == "add a role") {
+        } else if(answer.choice == "add a role") {
             addRole();
         } else if(answer.choice == "add an employee") {
             addEmployee();
-        } else if (answer.choice == "update an employee role") {
+        } else if(answer.choice == "update an employee role") {
             updateRole();
-        }else if (answer.choice == "update an employee's manager"){
+        }else if(answer.choice == "update an employee's manager"){
             updateManager();
-        } else if (answer.choice == "view employee by manager") {
+        } else if(answer.choice == "view employees by manager") {
             viewEmployeesByManager();
+        } else if(answer.choice == "view employees by department") {
+            viewEmployeesByDept();
         } else (console.log(answer))
     })
 }
