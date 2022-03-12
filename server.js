@@ -22,7 +22,8 @@ const questions = () => {
                 "update an employee role",
                 "update an employee's manager",
                 "view employees by manager",
-                "view employees by department"
+                "view employees by department",
+                "delete a department"
             ]
         }
     ])
@@ -169,6 +170,32 @@ function addDept()  {
 
 function searchDept() {
     return db.promise().query('SELECT * FROM department');
+}
+
+async function deleteDept() {
+    const [rows] = await searchDept()
+
+    const deptArr = rows.map((department) => ({
+        name: department.name,
+        value: department.dept_id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'deptList',
+            message: 'Which department do you want to delete?',
+            choices: deptArr
+        }
+    ]).then(deleteAnswer =>{
+        let sqlString = `DELETE FROM department WHERE dept_id = ?`;
+        const deletedDept = deleteAnswer.deptList
+        db.query(sqlString, deletedDept, (err, response) => {
+            // if(err) throw err;
+            console.log('Deleted', deleteAnswer.deptList, 'from the database!')
+            init();
+        })
+    })
 }
 
 async function addRole() {
@@ -380,6 +407,8 @@ function init() {
             viewEmployeesByManager();
         } else if(answer.choice == "view employees by department") {
             viewEmployeesByDept();
+        } else if(answer.choice == "delete a department") {
+            deleteDept();
         } else (console.log(answer))
     })
 }
