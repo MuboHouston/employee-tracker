@@ -54,7 +54,7 @@ function viewRoles() {
     })
 }
 
-function viewEmplys() {
+function viewEmployees() {
     const sqlString = `
     SELECT e1.first_name, e1.last_name, title, name AS department, salary, CONCAT(e2.first_name, " ", e2.last_name) AS manager
     FROM employee e1
@@ -93,19 +93,19 @@ function addDept()  {
     })
 }
 
-function searchDept(){
+function searchDept() {
     return db.promise().query('SELECT * FROM department');
 }
 
 async function addRole() {
     const [rows] = await searchDept()
-    console.log('rows:', rows);
+    // console.log('rows:', rows);
 
     const deptArr = rows.map((department) => ({
         name: department.name,
         value: department.dept_id
     }))
-    console.log(deptArr);
+    // console.log(deptArr);
 
     inquirer.prompt([
         {
@@ -124,15 +124,75 @@ async function addRole() {
             message: 'Which department does the role belong to?',
             choices: deptArr
         }
-    ]).then (data => {
+    ]).then (roleData => {
         let sqlString = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`
-        const newRole = [data.name, data.salary, data.department]
+        const newRole = [roleData.name, roleData.salary, roleData.department]
         db.query(sqlString, newRole, (err, result) => {
             if(err) throw err;
-            console.log('Added', data.name, "to the database");
+            console.log('Added', roleData.name, "to the database");
             init();
         })
     })
+}
+
+function searchManager() {
+    return db.promise().query(`SELECT r.employee_id AS id, CONCAT(r.first_name, " ", r.last_name) AS manager FROM employee r`);
+}
+
+function searchRoles() {
+    return db.promise().query(`SELECT * FROM role`)
+}
+
+async function addEmployee() {
+    const [rows] = await searchManager()
+    // console.log("rows:", rows)
+
+    const [rolesRows] = await searchRoles()
+
+    const employeeArr = rows.map((findManager) => ({
+        name: findManager.manager,
+        value: findManager.id
+    }))
+    // console.log('rows:', employeeArr);
+
+    const rolesArr = rolesRows.map((findRole) => ({
+        name: findRole.title,
+        value: findRole.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'firstName',
+            message: "What is the employee's first name"
+        },
+        {
+            type: 'input',
+            name: 'lastName',
+            message: "What is the employee's last name?"
+        },
+        {
+            type: 'list',
+            name: 'role',
+            message: "What is the employee's role?",
+            choices: rolesArr
+        },
+        {
+            type: 'list',
+            name: 'manager',
+            message: "Who is the employee's manager?",
+            choices: employeeArr
+        }
+    ]).then(employeeData => {
+        let sqlString = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`
+        const newEmployee = [employeeData.firstName, employeeData.lastName, employeeData.role, employeeData.manager]
+        console.log("newEmployee", newEmployee)
+        db.query(sqlString, newEmployee, (err, result) => {
+            if(err) throw err;
+            console.log("Added", employeeData.firstName, employeeData.lastName, "to the database");
+            init();
+        })
+    }) 
 }
 
 function init() {
@@ -145,11 +205,13 @@ function init() {
             viewRoles();
         } else if(answer.choice == "view all employees") {
             // console.log(answer)
-            viewEmplys();
+            viewEmployees();
         } else if(answer.choice == "add a department") {
             addDept();
         } else if (answer.choice == "add a role") {
             addRole();
+        } else if(answer.choice == "add an employee") {
+            addEmployee()
         } else (console.log(answer))
     })
 }
