@@ -19,7 +19,9 @@ const questions = () => {
                 "add a department", 
                 "add a role", 
                 "add an employee", 
-                "update an employee role"
+                "update an employee role",
+                "update an employee's manager",
+                "view employee by manager"
             ]
         }
     ])
@@ -195,11 +197,97 @@ async function addEmployee() {
     }) 
 }
 
+function searchEmployee() {
+    return db.promise().query(`SELECT e.employee_id AS id, e.role_id, title, CONCAT(e.first_name, " ", e.last_name) AS name FROM employee e LEFT JOIN role ON role_id = role.id`);
+}
+
+async function updateRole() {
+    const [rows] = await searchEmployee()
+    // console.log(rows);
+
+    const chooseEmploy = rows.map((findEmploy) =>({
+        name: findEmploy.name,
+        value: findEmploy.id
+    }))
+
+    const chooseRole = rows.map((findRole) => ({
+        name: findRole.title,
+        value: findRole.role_id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employeeList',
+            message: "Which employee's role do you want to update?",
+            choices: chooseEmploy
+        },
+        {
+            type: 'list',
+            name: 'roleList',
+            message: "What is the employee's new role?",
+            choices: chooseRole
+        }
+    ]).then(newRoleAnswers => {
+        let sqlString = `UPDATE employee SET role_id =?
+        WHERE employee_id =?`
+        const answers = [newRoleAnswers.roleList, newRoleAnswers.employeeList]
+        // console.log("newEmployeeRole", answers)
+        db.query(sqlString, answers, (err, result) => {
+            if(err) throw err;
+            console.log("Updated successful!");
+            init();
+        })
+    })
+}
+
+// function searchManager2 () {
+//     return db.promise().query(`SELECT CONCAT(e1.first_name, " ", e1.last_name) AS employee, e1.employee_id AS id, CONCAT(e2.first_name, " ", e2.last_name) AS manager, e1.manager_id
+//     FROM employee e1
+//     LEFT JOIN employee e2
+//     ON e1.manager_id = e2.employee_id`)
+// }
+
+async function updateManager() {
+    [rows] = await searchEmployee()
+    // console.log("new row", rows)
+
+    const chooseEmployee = rows.map((findEmployee) => ({
+        name: findEmployee.name,
+        value: findEmployee.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employeeList',
+            message: "Which employee manager do you want to update?",
+            choices: chooseEmployee
+        },
+        {
+            type: 'list',
+            name: 'managerList',
+            message: "Who is the employee's new manager?",
+            choices: chooseEmployee
+        }
+    ]).then(newManagerAnswers => {
+        let sqlString = `UPDATE employee SET manager_id =?
+        WHERE employee_id =?`
+        const answers = [newManagerAnswers.managerList, newManagerAnswers.employeeList]
+        // console.log("newEmployeeRole", answers)
+        db.query(sqlString, answers, (err, result) => {
+            if(err) throw err;
+            console.log("Updated successful!");
+            init();
+        })
+    })
+}
+
 function init() {
     questions()
     .then(answer => {
         if(answer.choice == "view all departments"){
-            viewDepts()
+            viewDepts();
         } else if (answer.choice == "view all roles") {
             // console.log(answer)
             viewRoles();
@@ -211,7 +299,13 @@ function init() {
         } else if (answer.choice == "add a role") {
             addRole();
         } else if(answer.choice == "add an employee") {
-            addEmployee()
+            addEmployee();
+        } else if (answer.choice == "update an employee role") {
+            updateRole();
+        }else if (answer.choice == "update an employee's manager"){
+            updateManager();
+        } else if (answer.choice == "view employee by manager") {
+            viewEmployeesByManager();
         } else (console.log(answer))
     })
 }
