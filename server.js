@@ -17,7 +17,7 @@ const questions = () => {
                 "view all roles", 
                 "view all employees",
                 "add a department", 
-                "add a roles", 
+                "add a role", 
                 "add an employee", 
                 "update an employee role"
             ]
@@ -28,7 +28,7 @@ const questions = () => {
 function viewDepts() {
     const sqlString = `SELECT dept_id, name FROM department`
 
-    db.promise().query(sqlString, (err, result) => {
+    db.query(sqlString, (err, result) => {
         if(err) throw err;
         //creates new line
         console.log('\n')
@@ -44,7 +44,7 @@ function viewRoles() {
     LEFT JOIN department 
     ON department_id = department.dept_id`
 
-    db.promise().query(sqlString, (err, result) => {
+    db.query(sqlString, (err, result) => {
         if(err) throw err;
         console.log('\n')
         console.table(result)
@@ -66,7 +66,7 @@ function viewEmplys() {
     ON e1.manager_id = e2.employee_id
     `
 
-    db.promise().query(sqlString, (err, result) => {
+    db.query(sqlString, (err, result) => {
     if(err) throw err;
     console.log('\n')
     console.table(result)
@@ -80,14 +80,56 @@ function addDept()  {
     inquirer.prompt([
         {
             type: 'input',
-            name: 'name',
-            message: 'Please enter the name of the department'
+            name: 'deptName',
+            message: 'What is the name of the department?'
         }
     ]).then (newDept => {
         let sqlString = `INSERT INTO department (name) VALUES (?)`
-        db.query(sqlString, newDept.name, (err, result) => {   
+        db.query(sqlString, newDept.deptName, (err, result) => {   
             if(err) throw err;
             console.log(`Added`, newDept.name,`to the database`)
+            init();
+        })
+    })
+}
+
+function searchDept(){
+    return db.promise().query('SELECT * FROM department');
+}
+
+async function addRole() {
+    const [rows] = await searchDept()
+    console.log('rows:', rows);
+
+    const deptArr = rows.map((department) => ({
+        name: department.name,
+        value: department.dept_id
+    }))
+    console.log(deptArr);
+
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'name',
+            message: 'What is the name of the role?'
+        },
+        {
+            type: 'input',
+            name: 'salary',
+            message: 'What is the salary of the role?'
+        },
+        {
+            type: 'list',
+            name: 'department',
+            message: 'Which department does the role belong to?',
+            choices: deptArr
+        }
+    ]).then (data => {
+        let sqlString = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`
+        const newRole = [data.name, data.salary, data.department]
+        db.query(sqlString, newRole, (err, result) => {
+            if(err) throw err;
+            console.log('Added', data.name, "to the database");
             init();
         })
     })
@@ -106,6 +148,8 @@ function init() {
             viewEmplys();
         } else if(answer.choice == "add a department") {
             addDept();
+        } else if (answer.choice == "add a role") {
+            addRole();
         } else (console.log(answer))
     })
 }
