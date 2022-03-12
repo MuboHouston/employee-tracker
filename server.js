@@ -78,6 +78,40 @@ function viewEmployees() {
     })
 }
 
+async function viewEmployeesByManager() {
+    const [rows] = await searchEmployee()
+    // console.log(rows);
+
+    const chooseManager = rows.map((findManager) =>({
+        name: findManager.name,
+        value: findManager.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'managerList',
+            message:'Please select a manager',
+            choices: chooseManager
+        }
+    ]).then(viewEmployees=> {
+        const sqlString = `SELECT e1.employee_id AS id, CONCAT(e1.first_name, " ", e1.last_name) AS employee, CONCAT(e2.first_name, " ", e2.last_name) AS manager
+        FROM employee e1
+        LEFT JOIN employee e2
+        ON e1.manager_id = e2.employee_id
+        WHERE e1.manager_id = ?
+        `
+        const answers = [viewEmployees.managerList]
+        db.query(sqlString, answers, (err, result) => {
+            if(err) throw err;
+            console.log('\n')
+            console.table(result);
+            console.log('\n')
+            init();
+        })
+    })
+}
+
 function addDept()  {
     inquirer.prompt([
         {
