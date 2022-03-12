@@ -23,7 +23,8 @@ const questions = () => {
                 "update an employee's manager",
                 "view employees by manager",
                 "view employees by department",
-                "delete a department"
+                "delete a department",
+                "delete a role"
             ]
         }
     ])
@@ -192,18 +193,18 @@ async function deleteDept() {
         const deletedDept = deleteAnswer.deptList
         db.query(sqlString, deletedDept, (err, response) => {
             // if(err) throw err;
-            console.log('Deleted', deleteAnswer.deptList, 'from the database!')
+            console.log('Deleted', deletedDept, 'from the database!')
             init();
         })
     })
 }
 
 async function addRole() {
-    const [rows] = await searchDept()
+    const [rows] = await searchRoles()
     // console.log('rows:', rows);
 
     const deptArr = rows.map((department) => ({
-        name: department.name,
+        name: department.department,
         value: department.dept_id
     }))
     // console.log(deptArr);
@@ -241,7 +242,37 @@ function searchManager() {
 }
 
 function searchRoles() {
-    return db.promise().query(`SELECT * FROM role`)
+    return db.promise().query(`SELECT id, title, salary, name AS department, dept_id
+    FROM role
+    LEFT JOIN department
+    ON department_id = department.dept_id`)
+}
+
+async function deleteRole() {
+    const [rows] = await searchRoles()
+
+    const rolesArr = rows.map((findRole) => ({
+        name: findRole.title,
+        value: findRole.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'roleList',
+            message: 'Which role do you want to delete?',
+            choices: rolesArr
+        }
+    ]).then(deletedRole => {
+        let sqlString = `DELETE FROM role WHERE id = ?`
+        const roleId = deletedRole.roleList
+        
+        db.query(sqlString, roleId, (err, result) => {
+            if(err) throw err;
+            console.log('Deleted', roleId, 'from role table')
+            init();
+        })
+    })
 }
 
 async function addEmployee() {
@@ -340,13 +371,6 @@ async function updateRole() {
     })
 }
 
-// function searchManager2 () {
-//     return db.promise().query(`SELECT CONCAT(e1.first_name, " ", e1.last_name) AS employee, e1.employee_id AS id, CONCAT(e2.first_name, " ", e2.last_name) AS manager, e1.manager_id
-//     FROM employee e1
-//     LEFT JOIN employee e2
-//     ON e1.manager_id = e2.employee_id`)
-// }
-
 async function updateManager() {
     [rows] = await searchEmployee()
     // console.log("new row", rows)
@@ -409,6 +433,8 @@ function init() {
             viewEmployeesByDept();
         } else if(answer.choice == "delete a department") {
             deleteDept();
+        } else if(answer.choice == "delete a role") {
+            deleteRole();
         } else (console.log(answer))
     })
 }
