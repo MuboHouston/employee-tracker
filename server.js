@@ -25,7 +25,8 @@ const questions = () => {
                 "view employees by department",
                 "delete a department",
                 "delete a role",
-                "delete an employee"
+                "delete an employee",
+                "total utilized budget"
             ]
         }
     ])
@@ -249,6 +250,19 @@ function searchRoles() {
     ON department_id = department.dept_id`)
 }
 
+async function totalBudget() {
+    const sqlString = `SELECT SUM(salary) AS total FROM role`
+
+    db.query(sqlString, (err, result) => {
+    if(err) throw err;
+    console.log('\n')
+    console.table(result)
+    console.log('\n')
+
+    init();
+    })
+}
+
 async function deleteRole() {
     const [rows] = await searchRoles()
 
@@ -465,6 +479,8 @@ function init() {
             deleteRole();
         } else if (answer.choice == "delete an employee") {
             deleteEmployee();
+        } else if (answer.choice == "total utilized budget") {
+            totalBudget();
         } else (console.log(answer))
     })
 }
