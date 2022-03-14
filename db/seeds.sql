@@ -4,7 +4,6 @@ VALUES
 ('Marketing'),
 ('Finance'),
 ('IT'),
-('Human Resources'),
 ('Operations');
 
 INSERT INTO role(title, salary, department_id)
@@ -17,10 +16,8 @@ VALUES
 ('Accountant', 80000, 3),
 ('Lead Engineer', 130000, 4),
 ('Jr Software Engineer', 90000, 4),
-('HR Director', 100000, 5),
-('Jr HR Specialist', 60000, 5),
-('Sr Operations Manager', 110000, 6),
-('Operations Analyst', 60000, 6);
+('Sr Operations Manager', 110000, 5),
+('Operations Analyst', 60000, 5);
 
 INSERT INTO employee(first_name, last_name, role_id, manager_id)
 VALUES
@@ -31,8 +28,6 @@ VALUES
 ('Lacey', 'Cobble', 5, NULL),
 ('Lisa', 'Profitt', 6, 5),
 ('Regina', 'Greenleaf', 7, NULL),
-('Mayra', 'Gonzalez', 8, 7),
-('Rob', 'Thomas', 9, NULL),
-('Mihai', 'Seeds', 10, 9),
-('Kemba', 'Lee', 11, NULL),
-('Kevin', 'Smith', 12, 11)
+('Miahi', 'Seeds', 8, 7),
+('Kemba', 'Lee', 9, NULL),
+('Kevin', 'Smith', 10, 9)

@@ -238,14 +238,14 @@ async function addRole() {
 }
 
 async function addEmployee() {
-    const [employeeRows] = await searchManager()
+    const [employeeRows] = await searchEmployee()
     // console.log("rows:", rows)
 
     const [rolesRows] = await searchRoles()
 
     const employeeArr = employeeRows.map((findManager) => ({
-        name: findManager.manager,
-        value: findManager.id
+        name: findManager.name,
+        id: findManager.id
     }))
     // console.log('rows:', employeeArr);
 
@@ -253,6 +253,10 @@ async function addEmployee() {
         name: findRole.title,
         value: findRole.id
     }))
+    
+    const numOfEmployees = employeeArr.length.toString()
+
+    console.table(employeeArr),
 
     inquirer.prompt([
         {
@@ -272,10 +276,16 @@ async function addEmployee() {
             choices: rolesArr
         },
         {
-            type: 'list',
+            type: 'input',
             name: 'manager',
-            message: "Who is the employee's manager?",
-            choices: employeeArr
+            message: "Who is the employee's manager? Please enter the manager's id number. (Refer to employee table above)",
+            validate: managerInput => {
+                if(managerInput > 0 && managerInput <= numOfEmployees || managerInput == null) {
+                return true
+            } else {
+                console.log("Please enter the manager's id number")
+            }
+        }
         }
     ]).then(employeeData => {
         let sqlString = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`
