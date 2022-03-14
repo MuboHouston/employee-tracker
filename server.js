@@ -280,7 +280,7 @@ async function addEmployee() {
             name: 'manager',
             message: "Who is the employee's manager? Please enter the manager's id number. (Refer to employee table above)",
             validate: managerInput => {
-                if(managerInput > 0 && managerInput <= numOfEmployees || managerInput == null) {
+                if(managerInput == "" || parseInt(managerInput) > 0 && parseInt(managerInput) <= numOfEmployees) {
                 return true
             } else {
                 console.log("Please enter the manager's id number")
