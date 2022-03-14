@@ -256,7 +256,10 @@ async function addEmployee() {
     
     const numOfEmployees = employeeArr.length.toString()
 
-    console.table(employeeArr),
+    console.log('\n')
+    console.log('Current Employee Table:')
+    console.table(employeeArr)
+    console.log('\n')
 
     inquirer.prompt([
         {
@@ -278,7 +281,7 @@ async function addEmployee() {
         {
             type: 'input',
             name: 'manager',
-            message: "Who is the employee's manager? Please enter the manager's id number. (Refer to employee table above)",
+            message: "Which manager does this employee report to? Please enter the manager's ID number or leave blank if no manager. (Refer to employee table above)",
             validate: managerInput => {
                 if(managerInput == "" || parseInt(managerInput) > 0 && parseInt(managerInput) <= numOfEmployees) {
                 return true
@@ -288,6 +291,9 @@ async function addEmployee() {
         }
         }
     ]).then(employeeData => {
+        if(employeeData.manager == "") {
+            employeeData.manager = null
+        } 
         let sqlString = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`
         const newEmployee = [employeeData.firstName, employeeData.lastName, employeeData.role, employeeData.manager]
         // console.log("newEmployee", newEmployee)
