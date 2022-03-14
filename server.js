@@ -39,10 +39,6 @@ function searchDept() {
     return db.promise().query('SELECT * FROM department');
 }
 
-function searchManager() {
-    return db.promise().query(`SELECT r.employee_id AS id, CONCAT(r.first_name, " ", r.last_name) AS manager FROM employee r`);
-}
-
 function searchRoles() {
     return db.promise().query(`SELECT id, title, salary, name AS department, dept_id
     FROM role
@@ -62,6 +58,7 @@ function viewDepts() {
         if(err) throw err;
         //creates new line
         console.log('\n')
+        console.log("All Departments:")
         console.table(result)
         console.log('\n')
 
@@ -77,6 +74,7 @@ function viewRoles() {
     db.query(sqlString, (err, result) => {
         if(err) throw err;
         console.log('\n')
+        console.log("All Roles:")
         console.table(result)
         console.log('\n')
 
@@ -99,6 +97,7 @@ function viewEmployees() {
     db.query(sqlString, (err, result) => {
     if(err) throw err;
     console.log('\n')
+    console.log("All Employees:")
     console.table(result)
     console.log('\n')
 
@@ -133,6 +132,7 @@ async function viewEmployeesByManager() {
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
             console.log('\n')
+            console.log("Employee(s) by Manager:")
             console.table(result);
             console.log('\n')
             init();
@@ -170,6 +170,7 @@ async function viewEmployeesByDept() {
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
             console.log('\n')
+            console.log("Employee(s) by Department:")
             console.table(result);
             console.log('\n')
             init();
@@ -294,6 +295,7 @@ async function addEmployee() {
         if(employeeData.manager == "") {
             employeeData.manager = null
         } 
+
         let sqlString = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`
         const newEmployee = [employeeData.firstName, employeeData.lastName, employeeData.role, employeeData.manager]
         // console.log("newEmployee", newEmployee)
@@ -432,7 +434,7 @@ async function updateRole() {
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
             console.log('\n')
-            console.log("Updated successful!");
+            console.log("Update successful!");
             console.log('\n')
             init();
         })
@@ -469,7 +471,7 @@ async function updateManager() {
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
             console.log('\n')
-            console.log("Updated successful!");
+            console.log("Update successful!");
             console.log('\n')
             init();
         })
@@ -478,15 +480,33 @@ async function updateManager() {
 
 //total budget section
 async function totalBudget() {
-    const sqlString = `SELECT SUM(salary) AS total FROM role`
+    [rows] = await searchDept()
 
-    db.query(sqlString, (err, result) => {
-    if(err) throw err;
-    console.log('\n')
-    console.table(result)
-    console.log('\n')
+    const findDept = rows.map((findDepartment) => ({
+        name: findDepartment.name,
+        value: findDepartment.dept_id
+    }))
 
-    init();
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'deptBudget',
+            message: "Please choose a department",
+            choices: findDept
+        }
+    ]).then(deptBudgetAnswer => {
+        let sqlString = `SELECT SUM(salary) AS total FROM role LEFT JOIN department ON department_id = department.dept_id WHERE dept_id = ?`
+        const answer = deptBudgetAnswer.deptBudget
+    
+        db.query(sqlString, answer, (err, result) => {
+        if(err) throw err;
+        console.log('\n')
+        console.log("Total Department Budget:")
+        console.table(result)
+        console.log('\n')
+
+        init();
+        })
     })
 }
 
