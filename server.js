@@ -1,12 +1,14 @@
+//npm module
 const inquirer = require('inquirer');
 const db = require("./config/connection");
 
+//connection
 db.connect((err) => {
     if(err) throw err;
     init()
 })
 
-const questions = () => {
+function questions () {
     return inquirer.prompt([
         {
             type: 'list',
@@ -26,14 +28,35 @@ const questions = () => {
                 "delete a department",
                 "delete a role",
                 "delete an employee",
-                "total utilized budget"
+                "total utilized budget",
+                "exit"
             ]
         }
     ])
 }
 
+function searchDept() {
+    return db.promise().query('SELECT * FROM department');
+}
+
+function searchManager() {
+    return db.promise().query(`SELECT r.employee_id AS id, CONCAT(r.first_name, " ", r.last_name) AS manager FROM employee r`);
+}
+
+function searchRoles() {
+    return db.promise().query(`SELECT id, title, salary, name AS department, dept_id
+    FROM role
+    LEFT JOIN department
+    ON department_id = department.dept_id`)
+}
+
+function searchEmployee() {
+    return db.promise().query(`SELECT employee_id AS id, role_id, title, CONCAT(first_name, " ", last_name) AS name FROM employee LEFT JOIN role ON role_id = role.id`);
+}
+
+//view section
 function viewDepts() {
-    const sqlString = `SELECT dept_id, name FROM department`
+    const sqlString = `SELECT d.name, d.dept_id FROM department d`
 
     db.query(sqlString, (err, result) => {
         if(err) throw err;
@@ -47,7 +70,7 @@ function viewDepts() {
 }
 
 function viewRoles() {
-    const sqlString = `SELECT title, id AS role_id, name AS department_name, salary FROM role 
+    const sqlString = `SELECT d.title, d.id AS role_id, name AS department, salary FROM role d 
     LEFT JOIN department 
     ON department_id = department.dept_id`
 
@@ -63,7 +86,7 @@ function viewRoles() {
 
 function viewEmployees() {
     const sqlString = `
-    SELECT e1.first_name, e1.last_name, title, name AS department, salary, CONCAT(e2.first_name, " ", e2.last_name) AS manager
+    SELECT e1.employee_id, e1.first_name, e1.last_name, title, name AS department, salary, CONCAT(e2.first_name, " ", e2.last_name) AS manager
     FROM employee e1
     LEFT JOIN role
     ON role_id = role.id
@@ -118,14 +141,14 @@ async function viewEmployeesByManager() {
 }
 
 async function viewEmployeesByDept() {
-    const [deptRows] = await searchDept()
+    const [rows] = await searchDept()
     // console.log(rows);
 
-    const chooseDept = deptRows.map((findDept) =>({
+    const chooseDept = rows.map((findDept) =>({
         name: findDept.name,
         value: findDept.dept_id
     }))
-    console.log("choose Dept:",chooseDept);
+    // console.log("choose Dept:",chooseDept);
 
     inquirer.prompt([
         {
@@ -154,6 +177,7 @@ async function viewEmployeesByDept() {
     })
 }
 
+//add section
 function addDept()  {
     inquirer.prompt([
         {
@@ -165,48 +189,20 @@ function addDept()  {
         let sqlString = `INSERT INTO department (name) VALUES (?)`
         db.query(sqlString, newDept.deptName, (err, result) => {   
             if(err) throw err;
-            console.log(`Added`, newDept.name,`to the database`)
-            init();
-        })
-    })
-}
-
-function searchDept() {
-    return db.promise().query('SELECT * FROM department');
-}
-
-async function deleteDept() {
-    const [rows] = await searchDept()
-
-    const deptArr = rows.map((department) => ({
-        name: department.name,
-        value: department.dept_id
-    }))
-
-    inquirer.prompt([
-        {
-            type: 'list',
-            name: 'deptList',
-            message: 'Which department do you want to delete?',
-            choices: deptArr
-        }
-    ]).then(deleteAnswer =>{
-        let sqlString = `DELETE FROM department WHERE dept_id = ?`;
-        const deletedDept = deleteAnswer.deptList
-        db.query(sqlString, deletedDept, (err, response) => {
-            // if(err) throw err;
-            console.log('Deleted', deletedDept, 'from the database!')
+            console.log('\n')
+            console.log(`Added`, newDept.deptName,`to the database`)
+            console.log('\n')
             init();
         })
     })
 }
 
 async function addRole() {
-    const [rows] = await searchRoles()
+    const [rows] = await searchDept()
     // console.log('rows:', rows);
 
     const deptArr = rows.map((department) => ({
-        name: department.department,
+        name: department.name,
         value: department.dept_id
     }))
     // console.log(deptArr);
@@ -233,70 +229,21 @@ async function addRole() {
         const newRole = [roleData.name, roleData.salary, roleData.department]
         db.query(sqlString, newRole, (err, result) => {
             if(err) throw err;
-            console.log('Added', roleData.name, "to the database");
-            init();
-        })
-    })
-}
-
-function searchManager() {
-    return db.promise().query(`SELECT r.employee_id AS id, CONCAT(r.first_name, " ", r.last_name) AS manager FROM employee r`);
-}
-
-function searchRoles() {
-    return db.promise().query(`SELECT id, title, salary, name AS department, dept_id
-    FROM role
-    LEFT JOIN department
-    ON department_id = department.dept_id`)
-}
-
-async function totalBudget() {
-    const sqlString = `SELECT SUM(salary) AS total FROM role`
-
-    db.query(sqlString, (err, result) => {
-    if(err) throw err;
-    console.log('\n')
-    console.table(result)
-    console.log('\n')
-
-    init();
-    })
-}
-
-async function deleteRole() {
-    const [rows] = await searchRoles()
-
-    const rolesArr = rows.map((findRole) => ({
-        name: findRole.title,
-        value: findRole.id
-    }))
-
-    inquirer.prompt([
-        {
-            type: 'list',
-            name: 'roleList',
-            message: 'Which role do you want to delete?',
-            choices: rolesArr
-        }
-    ]).then(deletedRole => {
-        let sqlString = `DELETE FROM role WHERE id = ?`
-        const roleId = deletedRole.roleList
-        
-        db.query(sqlString, roleId, (err, result) => {
-            if(err) throw err;
-            console.log('Deleted', roleId, 'from role table')
+            console.log('\n')
+            console.log("Added", roleData.name, "to the database");
+            console.log('\n')
             init();
         })
     })
 }
 
 async function addEmployee() {
-    const [rows] = await searchManager()
+    const [employeeRows] = await searchManager()
     // console.log("rows:", rows)
 
     const [rolesRows] = await searchRoles()
 
-    const employeeArr = rows.map((findManager) => ({
+    const employeeArr = employeeRows.map((findManager) => ({
         name: findManager.manager,
         value: findManager.id
     }))
@@ -333,23 +280,79 @@ async function addEmployee() {
     ]).then(employeeData => {
         let sqlString = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)`
         const newEmployee = [employeeData.firstName, employeeData.lastName, employeeData.role, employeeData.manager]
-        console.log("newEmployee", newEmployee)
+        // console.log("newEmployee", newEmployee)
         db.query(sqlString, newEmployee, (err, result) => {
             if(err) throw err;
+            console.log('\n')
             console.log("Added", employeeData.firstName, employeeData.lastName, "to the database");
+            console.log('\n')
             init();
         })
     }) 
 }
 
-function searchEmployee() {
-    return db.promise().query(`SELECT employee_id AS id, role_id, title, CONCAT(first_name, " ", last_name) AS name FROM employee LEFT JOIN role ON role_id = role.id`);
+//delete section
+async function deleteRole() {
+    const [rows] = await searchRoles()
+
+    const rolesArr = rows.map((findRole) => ({
+        name: findRole.title,
+        value: findRole.id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'roleList',
+            message: 'Which role do you want to delete?',
+            choices: rolesArr
+        }
+    ]).then(deletedRole => {
+        let sqlString = `DELETE FROM role WHERE id = ?`
+        const roleId = deletedRole.roleList
+        
+        db.query(sqlString, roleId, (err, result) => {
+            if(err) throw err;
+            console.log('\n')
+            console.log('Role deleted!')
+            console.log('\n')
+            init();
+        })
+    })
+}
+
+async function deleteDept() {
+    const [rows] = await searchDept()
+
+    const deptArr = rows.map((department) => ({
+        name: department.name,
+        value: department.dept_id
+    }))
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'deptList',
+            message: 'Which department do you want to delete?',
+            choices: deptArr
+        }
+    ]).then(deleteAnswer =>{
+        let sqlString = `DELETE FROM department WHERE dept_id = ?`;
+        const deletedDept = deleteAnswer.deptList
+        db.query(sqlString, deletedDept, (err, response) => {
+            // if(err) throw err;
+            console.log('\n')
+            console.log('Department deleted!')
+            console.log('\n')
+            init();
+        })
+    })
 }
 
 async function deleteEmployee() {
     const [rows] = await searchEmployee()
 
-    const chooseEmploy = rows.map((findEmploy) => ({
+    const findEmployee = rows.map((findEmploy) => ({
         name: findEmploy.name,
         value: findEmploy.id
     }))
@@ -359,7 +362,7 @@ async function deleteEmployee() {
             type: 'list',
             name: 'employeeList',
             message: 'Which employee do you want to delete?',
-            choices: chooseEmploy
+            choices: findEmployee
         }
     ]).then(deletedEmployee => {
         let sqlString = `DELETE FROM employee WHERE employee_id = ?`
@@ -367,24 +370,29 @@ async function deleteEmployee() {
 
         db.query(sqlString, employeeID, (err, result) => {
             if(err) throw err;
+            console.log('\n')
             console.log("Employee Deleted!")
+            console.log('\n')
             init();
         })
     })
 }
 
+//update section
 async function updateRole() {
-    const [rows] = await searchEmployee()
-    // console.log(rows);
+    const [employeeRows] = await searchEmployee();
+    // console.log(employeeRows);
 
-    const chooseEmploy = rows.map((findEmploy) =>({
+    const [roleRows] = await searchRoles();
+
+    const findEmployee = employeeRows.map((findEmploy) =>({
         name: findEmploy.name,
         value: findEmploy.id
     }))
 
-    const chooseRole = rows.map((findRole) => ({
+    const findRole = roleRows.map((findRole) => ({
         name: findRole.title,
-        value: findRole.role_id
+        value: findRole.id
     }))
 
     inquirer.prompt([
@@ -392,13 +400,13 @@ async function updateRole() {
             type: 'list',
             name: 'employeeList',
             message: "Which employee's role do you want to update?",
-            choices: chooseEmploy
+            choices: findEmployee
         },
         {
             type: 'list',
             name: 'roleList',
             message: "What is the employee's new role?",
-            choices: chooseRole
+            choices: findRole
         }
     ]).then(newRoleAnswers => {
         let sqlString = `UPDATE employee SET role_id =?
@@ -407,7 +415,9 @@ async function updateRole() {
         // console.log("newEmployeeRole", answers)
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
+            console.log('\n')
             console.log("Updated successful!");
+            console.log('\n')
             init();
         })
     })
@@ -417,9 +427,9 @@ async function updateManager() {
     [rows] = await searchEmployee()
     // console.log("new row", rows)
 
-    const chooseEmployee = rows.map((findEmployee) => ({
-        name: findEmployee.name,
-        value: findEmployee.id
+    const findEmployee = rows.map((findEmploy) => ({
+        name: findEmploy.name,
+        value: findEmploy.id
     }))
 
     inquirer.prompt([
@@ -427,13 +437,13 @@ async function updateManager() {
             type: 'list',
             name: 'employeeList',
             message: "Which employee manager do you want to update?",
-            choices: chooseEmployee
+            choices: findEmployee
         },
         {
             type: 'list',
             name: 'managerList',
             message: "Who is the employee's new manager?",
-            choices: chooseEmployee
+            choices: findEmployee
         }
     ]).then(newManagerAnswers => {
         let sqlString = `UPDATE employee SET manager_id =?
@@ -442,12 +452,36 @@ async function updateManager() {
         // console.log("newEmployeeRole", answers)
         db.query(sqlString, answers, (err, result) => {
             if(err) throw err;
+            console.log('\n')
             console.log("Updated successful!");
+            console.log('\n')
             init();
         })
     })
 }
 
+//total budget section
+async function totalBudget() {
+    const sqlString = `SELECT SUM(salary) AS total FROM role`
+
+    db.query(sqlString, (err, result) => {
+    if(err) throw err;
+    console.log('\n')
+    console.table(result)
+    console.log('\n')
+
+    init();
+    })
+}
+
+//
+function exit() {
+    console.log('\n')
+    console.log("Press Control + C")
+    console.log("Goodbye")
+}
+
+//first function after connection
 function init() {
     questions()
     .then(answer => {
@@ -481,6 +515,8 @@ function init() {
             deleteEmployee();
         } else if (answer.choice == "total utilized budget") {
             totalBudget();
+        } else if (answer.choice == "exit") {
+            exit();
         } else (console.log(answer))
     })
 }
