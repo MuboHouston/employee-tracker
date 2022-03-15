@@ -118,7 +118,7 @@ async function viewEmployeesByManager() {
         {
             type: 'list',
             name: 'managerList',
-            message:'Please select a manager',
+            message:'Please select a manager.',
             choices: chooseManager
         }
     ]).then(viewEmployees=> {
@@ -154,7 +154,7 @@ async function viewEmployeesByDept() {
         {
             type: 'list',
             name: 'deptList',
-            message:'Please select a department',
+            message:'Please select a department.',
             choices: chooseDept
         }
     ]).then(viewEmployees=> {
@@ -266,7 +266,7 @@ async function addEmployee() {
         {
             type: 'input',
             name: 'firstName',
-            message: "What is the employee's first name"
+            message: "What is the employee's first name?"
         },
         {
             type: 'input',
@@ -491,7 +491,7 @@ async function totalBudget() {
         {
             type: 'list',
             name: 'deptBudget',
-            message: "Please choose a department",
+            message: "Please choose a department.",
             choices: findDept
         }
     ]).then(deptBudgetAnswer => {
